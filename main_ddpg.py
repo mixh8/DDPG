@@ -1,12 +1,25 @@
 import gym
+import yfinance as yf
+from environment import PortfolioEnv
 import numpy as np
 from ddpg_tf2 import Agent
 from utils import plot_learning_curve
+import tensorflow as tf
 
 if __name__ == '__main__':
-    env = gym.make('Pendulum-v1')
+    tickers = ['AAPL', 'MSFT', 'AMZN', 'GOOGL', 'TSLA']
+    data = yf.download(tickers, "2013-01-01", "2023-01-01")['Adj Close'].values
+    print(data)
+    initial_investment = 100000
+    env = PortfolioEnv(data, initial_investment)
+
+    # env = gym.make('Pendulum-v1')
+
+
     agent = Agent(input_dims=env.observation_space.shape, env=env,
             n_actions=env.action_space.shape[0])
+    # agent = Agent(input_dims=(env.observation_space.shape[0] + 1,), env=env,
+    #     n_actions=env.action_space.shape[0])
     n_games = 250
 
     figure_file = 'plots/pendulum.png'
@@ -18,10 +31,9 @@ if __name__ == '__main__':
     if load_checkpoint:
         n_steps = 0
         while n_steps <= agent.batch_size:
-            observation = env.reset()[0]
+            observation = env.reset()#[0]
             action = env.action_space.sample()
-            observation_, reward, done, truncated, info = env.step(action)
-            done = done or truncated
+            observation_, reward, done, info = env.step(action)
             agent.remember(observation, action, reward, observation_, done)
             n_steps += 1
         print("--- Learning ---")
@@ -33,13 +45,13 @@ if __name__ == '__main__':
         evaluate = False
 
     for i in range(n_games):
-        observation = env.reset()[0]
+        observation = env.reset()# [0]
         done = False
         score = 0
         while not done:
             action = agent.choose_action(observation, evaluate)
-            observation_, reward, done, truncated, info = env.step(action)
-            done = done or truncated
+            observation_, reward, done, info = env.step(action)
+            #print(action)
             score += reward
             agent.remember(observation, action, reward, observation_, done)
             if not load_checkpoint:
