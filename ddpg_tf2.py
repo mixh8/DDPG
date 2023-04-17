@@ -1,14 +1,16 @@
 import tensorflow as tf
+from common.scaler import scale_array
 import tensorflow.keras as keras
 from tensorflow.keras.optimizers import Adam
 from buffer import ReplayBuffer
 from networks import ActorNetwork, CriticNetwork
+import numpy as np
 
 
 class Agent:
     def __init__(self, input_dims, alpha=0.001, beta=0.002, env=None,
-                 gamma=0.99, n_actions=2, max_size=1000000, tau=0.005,
-                 fc1=400, fc2=300, batch_size=64, noise=0.1):
+                 gamma=0.99, n_actions=2, max_size=1000000, tau=0.0005,
+                 fc1=400, fc2=300, batch_size=64, noise=0.4):
         self.gamma = gamma
         self.tau = tau
         self.memory = ReplayBuffer(max_size, input_dims, n_actions)
@@ -28,6 +30,8 @@ class Agent:
         self.critic.compile(optimizer=Adam(learning_rate=beta))
         self.target_actor.compile(optimizer=Adam(learning_rate=alpha))
         self.target_critic.compile(optimizer=Adam(learning_rate=beta))
+
+        self.cntr = 0
 
         self.update_network_parameters(tau=1)
 
@@ -65,14 +69,36 @@ class Agent:
         self.target_critic.load_weights(self.target_critic.checkpoint_file)
 
     def choose_action(self, observation, evaluate=False):
+        # if self.cntr < self.batch_size:
+        #     action = np.random.uniform(low=0.0, high=1.0, size=(self.n_actions,))
+        #     action /= action.sum()
+        #     a = tf.convert_to_tensor([action], dtype=tf.float32)
+        #     self.cntr += 1
+        #     return a[0]
         state = tf.convert_to_tensor([observation], dtype=tf.float32)
+        # 10 random actions per n = batch size actions
+        if (self.cntr % self.batch_size < 10):
+            action = np.random.uniform(low=0.0, high=1.0, size=(self.n_actions - 1,)).tolist()
+
+            # try not to keep cash
+            action.append(0)
+            # action /= action.sum()
+            actions = tf.convert_to_tensor([action], dtype=tf.float32)
+            actions = tf.clip_by_value(actions, self.min_action, self.max_action)
+            actions = scale_array(actions)
+            return actions[0]
+        
         actions = self.actor(state)
         if not evaluate:
             actions += tf.random.normal(shape=[self.n_actions],
-                                        mean=0.0, stddev=self.noise)
+                                        mean=0, stddev=self.noise)
+            
         # note that if the env has an action > 1, we have to multiply by
         # max action at some point
         actions = tf.clip_by_value(actions, self.min_action, self.max_action)
+        actions = scale_array(actions)
+
+        self.cntr += 1
 
         return actions[0]
 

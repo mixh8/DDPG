@@ -1,6 +1,11 @@
 import numpy as np
+import tensorflow as tf
 
 def scale_array(arr):
+    arr = np.array(arr).flatten().tolist()
+    zeroes = np.zeros(len(arr)).tolist()
+    if (arr == zeroes):
+        return arr
     positive_sum = 0
     negative_sum = 0
     
@@ -18,6 +23,8 @@ def scale_array(arr):
         scaling_factor = np.array([positive_scaling_factor if elem > 0 else negative_scaling_factor for elem in arr])
     
     scaled_arr = np.multiply(arr, scaling_factor)
+
+    scaled_arr = tf.convert_to_tensor([scaled_arr], dtype=tf.float32)
     
     return scaled_arr
 
