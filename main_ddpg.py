@@ -8,7 +8,7 @@ import tensorflow as tf
 import pandas as pd
 
 if __name__ == '__main__':
-    tickers = ['AAPL', 'MSFT', 'AMZN', 'GOOGL', 'TSLA']
+    tickers = ['AMZN','GOOG','PG','KO','IBM','DG','XOM','KO','PEP','MT','NL','LPL', 'META', 'TSLA', 'NVDA'] #['AAPL', 'MSFT', 'AMZN', 'GOOGL', 'TSLA']
 
     # load data
     LOAD_DATA = False
@@ -35,13 +35,13 @@ if __name__ == '__main__':
 
     # agent = Agent(input_dims=(env.observation_space.shape[0] + 1,), env=env,
     #     n_actions=env.action_space.shape[0])
-    n_games = 50
+    n_games = 100
 
     figure_file = 'plots/portfolio-optimization.png'
 
     
     score_history = []
-    load_checkpoint = True
+    load_checkpoint = False
 
     if load_checkpoint:
         env = PortfolioEnv(test_data, initial_investment)

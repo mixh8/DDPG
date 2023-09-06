@@ -10,7 +10,7 @@ import numpy as np
 class Agent:
     def __init__(self, input_dims, alpha=0.001, beta=0.002, env=None,
                  gamma=0.99, n_actions=2, max_size=1000000, tau=0.0005,
-                 fc1=400, fc2=300, batch_size=64, noise=0.4):
+                 fc1=400, fc2=300, batch_size=64, noise=0.5):
         self.gamma = gamma
         self.tau = tau
         self.memory = ReplayBuffer(max_size, input_dims, n_actions)
@@ -77,15 +77,20 @@ class Agent:
         #     return a[0]
         state = tf.convert_to_tensor([observation], dtype=tf.float32)
         # 10 random actions per n = batch size actions
-        if (self.cntr % self.batch_size < 10):
-            action = np.random.uniform(low=0.0, high=1.0, size=(self.n_actions - 1,)).tolist()
-
+        if (self.cntr % self.batch_size < (self.n_actions - 1)) and self.cntr < 10 * self.batch_size:
+            # action = np.random.uniform(low=0.0, high=1.0, size=(self.n_actions - 1,)).tolist()
             # try not to keep cash
-            action.append(0)
+            # action.append(0)
+
+            # full in on a stock, randomly
+            action = [0 for i in range(self.n_actions)]
+            action[self.cntr % self.batch_size] = 1
+ 
             # action /= action.sum()
             actions = tf.convert_to_tensor([action], dtype=tf.float32)
-            actions = tf.clip_by_value(actions, self.min_action, self.max_action)
-            actions = scale_array(actions)
+            # actions = tf.clip_by_value(actions, self.min_action, self.max_action)
+            # actions = scale_array(actions)
+            self.cntr += 1
             return actions[0]
         
         actions = self.actor(state)
